@@ -1,25 +1,3 @@
-"""
-CIViC ingestion pipeline.
-
-Downloads the three nightly CIViC TSVs (Variants, Molecular Profiles,
-Evidence), normalizes comma-separated fields into proper junction
-tables, computes a per-evidence confidence score, and loads everything
-into Postgres idempotently (safe to re-run against a fresh nightly file).
-
-Run:
-    python ingest.py
-
-Requires:
-    DATABASE_URL env var, e.g.
-    postgresql://civic:civic@localhost:5432/civic
-
-IMPORTANT — verify before running:
-    MOLECULAR_PROFILE_URL below follows the same naming pattern as the
-    other two (confirmed) nightly files, but the exact filename wasn't
-    confirmed against civicdb.org/releases at the time this was written.
-    Check the releases page and update the constant if it differs.
-"""
-
 import os
 import sys
 from io import StringIO
@@ -35,11 +13,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://civic:civic@localhos
 
 # evidence_level -> numeric weight (A best, E weakest), per CIViC's own definitions
 LEVEL_WEIGHT = {"A": 5, "B": 4, "C": 3, "D": 2, "E": 1}
-
-
-# -----------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------
 
 def fetch_tsv(url: str) -> pd.DataFrame:
     """Download a CIViC nightly TSV and load it with blanks preserved
@@ -103,10 +76,6 @@ def confidence_score(evidence_level: str, rating: str) -> float | None:
         return float(level_w)
     return round((level_w + rating_i) / 2, 2)
 
-
-# -----------------------------------------------------------------
-# Loaders
-# -----------------------------------------------------------------
 
 def load_variants(conn, df: pd.DataFrame):
     from psycopg2.extras import execute_values
@@ -302,10 +271,6 @@ def load_evidence(conn, df: pd.DataFrame):
     conn.commit()
     print(f"  loaded {len(rows)} evidence items")
 
-
-# -----------------------------------------------------------------
-# Main
-# -----------------------------------------------------------------
 
 def main():
     import psycopg2
